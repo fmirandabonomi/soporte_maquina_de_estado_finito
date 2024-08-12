@@ -87,6 +87,8 @@
         - -Wall
         - -Wextra
         - -Werror
+        - -DMAX_EVENTOS=2
+        - -DMAX_OBSERVADORES=2
 
 # LIBRARIES
 # These libraries are automatically injected into the build process. Those specified as

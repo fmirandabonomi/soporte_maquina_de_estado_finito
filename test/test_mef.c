@@ -1,4 +1,5 @@
 #include "unity.h"
+#include "evento.h" // Para compilar evento.c
 #include "cola_eventos.h"
 #include "mef.h"
 
@@ -130,6 +131,8 @@ void test_mefFinaliza(void)
     Mef_ejecuta(&dut);
     Mef_finaliza(&dut);
     TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.salida,"Debe procesar evento SALIDA al finalizar la máquina");
+    Mef_finaliza(&dut);
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.salida,"Posteriores finalizaciones no tienen otro efecto");
 }
 void test_mefReiniciaMaquinaFinalizada(void)
 {
@@ -140,4 +143,105 @@ void test_mefReiniciaMaquinaFinalizada(void)
     TEST_ASSERT_EQUAL_UINT_MESSAGE(2,prueba.a.inicializa,"Vuelve a inicializar");
     TEST_ASSERT_EQUAL_UINT_MESSAGE(2,prueba.a.entrada,"Vuelve a ingresar al estado inicial");
     TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.salida,"No sale del estado");
+}
+void test_mefComoObservadorEventos(void)
+{
+    ObservadorEventos *obs = Mef_obtObservador(&dut);
+    TEST_ASSERT_NOT_NULL_MESSAGE(obs,"La interfaz observador no puede ser un puntero nulo");
+    Mef_ejecuta(&dut);
+    TEST_ASSERT_TRUE(ObservadorEventos_recibeEvento(obs,&eventos.evtB));
+    Mef_ejecuta(&dut);
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.b,"Debe procesar el evento B");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.salida,"Debe procesar evento SALIDA al salir del estado a");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.b.entrada,"Debe procesar evento ENTRADA al entrar al estado b");
+
+}
+
+
+static void x(Mef *m,const Evento *e)
+{
+    switch (Evento_obtMensaje(e))
+    {
+    case Mensaje_INICIALIZA:
+        TEST_ASSERT_TRUE_MESSAGE(Mef_enviaEvento(m,&eventos.evtB),"Debe poder enviar un evento");
+    break;default:
+    break;
+    }
+}
+
+
+
+void test_mefComoFuenteEventosMultiplesObservadores(void)
+{
+    static Mef aux,otra;
+    Mef_init(&otra,a);
+    Mef_init(&aux,x);
+    Mef_registraObservador(&aux,Mef_obtObservador(&dut));
+    TEST_ASSERT_TRUE_MESSAGE(Mef_registraObservador(&aux,Mef_obtObservador(&otra)),"Debe poder registrar varios observadores de eventos");
+    Mef_ejecuta(&dut);
+    Mef_ejecuta(&otra);
+    Mef_ejecuta(&aux);
+    Mef_ejecuta(&dut);
+    Mef_ejecuta(&otra);
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(2,prueba.a.b,"Ambos observadores deben recibir el evento B");
+}
+
+static void y(Mef *m,const Evento *e)
+{
+    switch (Evento_obtMensaje(e))
+    {
+    case Mensaje_INICIALIZA:
+        TEST_ASSERT_FALSE_MESSAGE(Mef_enviaEvento(m,&eventos.evtB),"No debe poder enviar un evento sin receptores");
+    break;default:
+    break;
+    }
+}
+
+void test_mefComoFuenteEventosDesregistraObservador(void)
+{
+    Mef aux;
+    Mef_init(&aux,y);
+    Mef_registraObservador(&aux,Mef_obtObservador(&dut));
+    Mef_ejecuta(&dut);
+    TEST_ASSERT_TRUE_MESSAGE(Mef_desregistraObservador(&aux,Mef_obtObservador(&dut)),"Debe poder desregistrar un observador registrado");
+    Mef_ejecuta(&aux);
+    Mef_ejecuta(&dut);
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(0,prueba.a.b,"El observador desregistrado no debe recibir el evento B");
+    TEST_ASSERT_FALSE_MESSAGE(Mef_desregistraObservador(&aux,Mef_obtObservador(&dut)),"No puede desregistrar un observador no registrado");
+}
+
+void test_mefAgotaColaDeEventos(void)
+{
+    Mef_ejecuta(&dut);
+    for(unsigned i=0;i<MAX_EVENTOS;++i){
+        TEST_ASSERT_TRUE_MESSAGE(Mef_recibeEvento(&dut,&eventos.evtB),"Debe poder recibir eventos mientras tenga espacio en cola");
+    }
+
+    TEST_ASSERT_FALSE_MESSAGE(Mef_recibeEvento(&dut,&eventos.evtB),"No puede recibir eventos una vez agotado el espacio");
+}
+
+void test_mefAgotaObservadores(void)
+{
+    Mef_ejecuta(&dut);
+    static ObservadorEventos obs[MAX_OBSERVADORES];
+    static ObservadorEventos adicional;
+
+    for(unsigned i=0;i<MAX_OBSERVADORES;++i){
+        TEST_ASSERT_TRUE_MESSAGE(Mef_registraObservador(&dut,obs+i),"Debe poder registrar observadores mientras tenga espacio");
+    }
+    TEST_ASSERT_FALSE_MESSAGE(Mef_registraObservador(&dut,&adicional),"No puede registrar observadores una vez agotado el espacio");
+    TEST_ASSERT_FALSE_MESSAGE(Mef_desregistraObservador(&dut,&adicional),"No debe poder desregistrar observador no registrado");
+    for(unsigned i=0;i<MAX_OBSERVADORES;++i){
+        TEST_ASSERT_TRUE_MESSAGE(Mef_desregistraObservador(&dut,obs+i),"Debe poder desregistrar observadores registrados");
+    }
+}
+
+void test_mefComoFuenteEventosObservadorNoPuedeRecibir(void)
+{
+    Mef aux;
+    Mef_init(&aux,x);
+    TEST_ASSERT_TRUE_MESSAGE(Mef_registraObservador(&aux,Mef_obtObservador(&dut)),"Debe poder registrar un observador de eventos");
+    Mef_ejecuta(&dut);
+    for(unsigned i=0;i<MAX_EVENTOS;++i)TEST_ASSERT_TRUE(Mef_enviaEvento(&aux,&eventos.evtB));
+    TEST_ASSERT_FALSE_MESSAGE(Mef_enviaEvento(&aux,&eventos.evtB),"No debe poder enviar evento si los observadores no pueden recibirlo");
 }
