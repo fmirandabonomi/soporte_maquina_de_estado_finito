@@ -43,6 +43,7 @@ static void a(Mef *m,const Evento *e)
     (void)m;
     switch(Evento_obtMensaje(e)){
     case Mensaje_INICIALIZA:
+        TEST_ASSERT_EQUAL_UINT_MESSAGE(prueba.a.inicializa,prueba.a.entrada,"La inicializacion se ejecuta antes que la entrada al estado");
         prueba.a.inicializa++;
     break;case Mensaje_ENTRADA:
         prueba.a.entrada++;
@@ -124,3 +125,19 @@ void test_mefTransicionExternaAlMismoEstado(void)
     TEST_ASSERT_EQUAL_UINT_MESSAGE(2,prueba.b.entrada,"Debe procesar evento ENTRADA al entrar al estado b");
 }
 
+void test_mefFinaliza(void)
+{
+    Mef_ejecuta(&dut);
+    Mef_finaliza(&dut);
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.salida,"Debe procesar evento SALIDA al finalizar la máquina");
+}
+void test_mefReiniciaMaquinaFinalizada(void)
+{
+    Mef_ejecuta(&dut);
+    Mef_finaliza(&dut);
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.salida,"Debe procesar evento SALIDA al finalizar la máquina");
+    Mef_ejecuta(&dut);
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(2,prueba.a.inicializa,"Vuelve a inicializar");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(2,prueba.a.entrada,"Vuelve a ingresar al estado inicial");
+    TEST_ASSERT_EQUAL_UINT_MESSAGE(1,prueba.a.salida,"No sale del estado");
+}

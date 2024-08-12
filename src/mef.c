@@ -17,25 +17,26 @@ void Mef_init(Mef *self,Estado inicial)
     self->estado = NULL;
     self->transicion = false;
     ColaEventos_init(&self->eventos);
-    ColaEventos_pon(&self->eventos,&eventosSistema.inicializa);
 }
 void Mef_ejecuta(Mef *self)
 {
-    const Evento *evento; 
-    if(!ColaEventos_toma(&self->eventos,&evento)) return;
+    const Evento *evento;
+    
+    if(!self->estado) evento = &eventosSistema.inicializa;
+    else if(!ColaEventos_toma(&self->eventos,&evento)) return;
+
     Estado estadoInicial = self->estado;
     if (Evento_obtMensaje(evento) == Mensaje_INICIALIZA){
-        estadoInicial = self->inicial;
         self->estado = self->inicial;
-        self->estado(self,&eventosSistema.entrada);
         self->estado(self,evento);
+        self->transicion = true;
     }else{
         self->estado(self,evento);
     }
     if(self->transicion)
     {
         self->transicion = false;
-        estadoInicial(self,&eventosSistema.salida);
+        if(estadoInicial) estadoInicial(self,&eventosSistema.salida);
         self->estado(self,&eventosSistema.entrada);
     }
 }
@@ -53,4 +54,10 @@ bool Mef_recibeEvento(Mef *self,const Evento *evento)
 Mensaje Evento_obtMensaje(const Evento * e)
 {
     return e->mensaje;
+}
+void Mef_finaliza(Mef *self)
+{
+    if(self->estado) self->estado(self,&eventosSistema.salida);
+    self->estado = NULL;
+    ColaEventos_borra(&self->eventos);
 }

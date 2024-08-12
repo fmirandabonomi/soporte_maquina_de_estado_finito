@@ -42,4 +42,10 @@ bool ColaEventos_pon(ColaEventos *self,const Evento *evento);
  */
 bool ColaEventos_toma(ColaEventos *self,const Evento **evento);
 
+/**
+ * @brief Borra los eventos de la cola
+ * 
+ * @param self La cola
+ */
+void ColaEventos_borra(ColaEventos *self);
 #endif

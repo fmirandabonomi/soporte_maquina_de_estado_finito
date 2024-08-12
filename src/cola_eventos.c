@@ -2,8 +2,7 @@
 
 void ColaEventos_init(ColaEventos *self)
 {
-    self->escritura=0;
-    self->lectura = 0;
+    ColaEventos_borra(self);
 }
 bool ColaEventos_pon(ColaEventos *self,const Evento *evento)
 {
@@ -16,4 +15,10 @@ bool ColaEventos_toma(ColaEventos *self,const Evento **evento)
     if (self->escritura == self->lectura) return false;
     *evento = self->eventos[(self->lectura++)&MAX_EVENTOS];
     return true;
+}
+
+void ColaEventos_borra(ColaEventos *self)
+{
+    self->escritura=0;
+    self->lectura = 0;
 }
