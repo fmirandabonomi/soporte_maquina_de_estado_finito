@@ -12,6 +12,7 @@ _Static_assert(((MAX_EVENTOS - 1) & MAX_EVENTOS) == 0, "MAX_EVENTOS debe ser pot
 typedef struct ColaEventos ColaEventos;
 
 struct ColaEventos{
+    ObservadorEventos observador;
     const Evento *eventos[MAX_EVENTOS];
     unsigned escritura;
     unsigned lectura;
@@ -48,4 +49,13 @@ bool ColaEventos_toma(ColaEventos *self,const Evento **evento);
  * @param self La cola
  */
 void ColaEventos_borra(ColaEventos *self);
+
+/**
+ * @brief Produce un observador de eventos que introduce los eventos
+ * directamente en una cola de eventos
+ * 
+ * @param self La cola
+ * @return ObservadorEventos* El observador 
+ */
+ObservadorEventos *ColaEventos_obtObservador(ColaEventos *self);
 #endif
