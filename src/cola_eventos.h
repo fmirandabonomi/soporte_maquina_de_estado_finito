@@ -6,7 +6,7 @@
 #ifndef MAX_EVENTOS
 #define MAX_EVENTOS 16
 #else
-_Static_assert(((MAX_EVENTOS - 1) & MAX_EVENTOS) == 0, "MAX_EVENTOS debe ser potencia de dos")
+_Static_assert(((MAX_EVENTOS - 1) & MAX_EVENTOS) == 0, "MAX_EVENTOS debe ser potencia de dos");
 #endif
 
 typedef struct ColaEventos ColaEventos;
