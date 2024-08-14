@@ -245,3 +245,31 @@ void test_mefComoFuenteEventosObservadorNoPuedeRecibir(void)
     for(unsigned i=0;i<MAX_EVENTOS;++i)TEST_ASSERT_TRUE(Mef_enviaEvento(&aux,&eventos.evtB));
     TEST_ASSERT_FALSE_MESSAGE(Mef_enviaEvento(&aux,&eventos.evtB),"No debe poder enviar evento si los observadores no pueden recibirlo");
 }
+
+
+static Evento ultimoEvento;
+
+void guardaUltimoEvento(Mef *m,const Evento *e)
+{
+    (void)m;
+    ultimoEvento = *e;
+}
+
+void test_funcionColaDeEventos(void)
+{
+    enum{FRACCION = 3};
+    _Static_assert(MAX_EVENTOS/FRACCION > 1, "Valor de MAX_EVENTOS insuficiente");
+    static Evento eventos[MAX_EVENTOS/FRACCION];
+    Mef_init(&dut,guardaUltimoEvento);
+    Mef_ejecuta(&dut);
+    for(unsigned j=0;j<2*FRACCION;++j){
+        for(unsigned i=0;i<MAX_EVENTOS/FRACCION;++i){
+            eventos[i].mensaje = i+j*FRACCION+Mensaje_USUARIO;
+            TEST_ASSERT_TRUE(Mef_recibeEvento(&dut,&eventos[i]));
+        }
+        for(unsigned i=0;i<MAX_EVENTOS/FRACCION;++i){
+            Mef_ejecuta(&dut);
+            TEST_ASSERT_EQUAL_UINT(eventos[i].mensaje,ultimoEvento.mensaje);
+        }
+    }
+}

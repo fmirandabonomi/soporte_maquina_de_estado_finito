@@ -87,7 +87,7 @@
         - -Wall
         - -Wextra
         - -Werror
-        - -DMAX_EVENTOS=2
+        - -DMAX_EVENTOS=8
         - -DMAX_OBSERVADORES=2
 
 # LIBRARIES
